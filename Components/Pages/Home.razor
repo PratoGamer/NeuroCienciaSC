@@ -1,0 +1,52 @@
+﻿@page "/"
+
+<div class="text-center">
+	<h1>Neuro Ciencia SC. <i class="bi bi-person-fill-gear"></i></h1>
+
+</div>
+
+<button class="btn btn-outline-primary"
+		@onclick="OrdenarAscendenteMinimo">
+		Ordenar Ascesdente
+</button>
+
+<p> @operacion[1] </p>
+<p> @operacion[4] </p>
+
+@foreach (var lista in secuenciaOrdenada)
+{
+	<p> @lista.indice y @lista.valor </p>
+}
+
+@code {
+
+	// Lista para Almacenar la Secuencia de Numeros
+	public List<int> secuencia = new List<int>();
+
+	// Diccionario para Indice -> Operacion
+	public Dictionary<int, string> operacion = new Dictionary<int, string>()
+	{
+		{ 1, "+1" },
+		{ 2, "-1" },
+		{ 3, "*2" },
+		{ 4, "/2" }
+	};
+
+	// Tupla para Almacenar Indice y Operacion
+	List<(int indice, string valor)> secuenciaOrdenada = new List<(int indice, string valor)>();
+
+	public void OrdenarAscendenteMinimo()
+	{
+
+
+		// Agregar Operaciones a la Tupla
+		secuenciaOrdenada.Add((1, operacion[1]));
+		secuenciaOrdenada.Add((2, operacion[2]));
+		secuenciaOrdenada.Add((3, operacion[3]));
+		secuenciaOrdenada.Add((4, operacion[4]));
+
+	}
+
+
+
+}
