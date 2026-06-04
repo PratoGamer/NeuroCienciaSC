@@ -15,9 +15,10 @@ namespace NeuroCienciaSC
                 });
 
             builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddSingleton<Services.NeuroCienciaService>();
 
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
 
