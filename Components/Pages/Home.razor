@@ -18,23 +18,108 @@
 
 </div>
 
-<div class="container-fluid align-content-center p-1 m-1">
-	<button class="btn btn-outline-primary"
-			@onclick="NeuroCiencia.OrdenarAscendenteMinimo">
-		Ordenar Ascesdente
-	</button>
-</div>
+<hr />
 
+<h3>Control de Secuencia</h3>
+<label>Introduce un Número:</label>
+<input type="number" min="0" step="1" @bind="nuevoNumero" />
+<button @onclick="AgregarNumero">Añadir</button>
 
+<button @onclick="ProcesarOrdenamiento" disabled="@(NeuroCiencia.secuencia.Count <= 1)">
+	Calcular Orden Ascendente
+</button>
+<button @onclick="LimpiarTodo">
+	Limpiar Todo
+</button>
 
-@foreach (var lista in NeuroCiencia.secuenciaOrdenada)
+<hr />
+
+<h3>Secuencia Ingresada</h3>
+@if (NeuroCiencia.secuencia.Count == 0)
 {
-	<p> @lista.indice y @lista.operacion </p>
+	<p>La lista está vacía.</p>
+}
+else
+{
+	<ul>
+		@foreach (var numero in NeuroCiencia.secuencia)
+		{
+			<li><strong>@numero</strong></li>
+		}
+	</ul>
 }
 
+<hr />
+
+<h3>Transformación Mínima</h3>
+
+@if (calculado && NeuroCiencia.secuenciaOrdenada.Count == 0)
+{
+	<p style="color: blue;">La secuencia ya se encuentra ordenada. Costo: 0.</p>
+}
+else if (NeuroCiencia.secuenciaOrdenada.Count > 0)
+{
+	<p style="color: green; font-weight: bold;">
+		Costo Total Acumulado: @NeuroCiencia.SumarCostos()
+	</p>
+
+	<ul>
+		@foreach (var i in Enumerable.Range(0, NeuroCiencia.secuenciaOrdenada.Count))
+		{
+			var operacionPaso = NeuroCiencia.secuenciaOrdenada[i];
+			var costoPaso = NeuroCiencia.costos[i];
+			var lista = NeuroCiencia.secuencia[operacionPaso.indice];
+
+			<li>
+				Original: @lista -> Modificar índice @operacionPaso.indice ->
+				<span>[@operacionPaso.operacion]</span>
+				(Costo: @costoPaso)
+			</li>
+		}
+	</ul>
+}
+else
+{
+	<p>Ingresa al menos 2 números y presiona "Calcular".</p>
+}
+
+<!-- Codigo de C# -->
 @code {
+	// Variables para el Control
+	private int nuevoNumero;
+	private bool calculado = false;
 
+	// Funcion para Agregar un Numero a la Secuencia
+	private void AgregarNumero()
+	{
+		// Verificar que sea Entero y Positivo
+		if (nuevoNumero >= 0)
+		{
+			NeuroCiencia.secuencia.Add(nuevoNumero);
+			calculado = false;
+		}
 
+	}
 
+	// Funcion para Procesar el Orden Ascendente
+	private async Task ProcesarOrdenamiento()
+	{
+		if (NeuroCiencia.secuencia.Count > 1)
+		{
+			await NeuroCiencia.OrdenarAscendenteMinimo();
+			calculado = true;
+		}
+
+	}
+
+	// Funcion para Limpiar la Secuencia y Reiniciar el Proceso
+	private void LimpiarTodo()
+	{
+		NeuroCiencia.secuencia.Clear();
+		NeuroCiencia.secuenciaOrdenada.Clear();
+		NeuroCiencia.costos.Clear();
+		nuevoNumero = 0;
+		calculado = false;
+	}
 
 }
