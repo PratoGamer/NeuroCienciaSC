@@ -6,83 +6,119 @@
 @inject NeuroCienciaService NeuroCiencia
 
 <!-- Titulo de la Aplicacion -->
-<div class="container-fluid d-flex rounded-3 justify-content-center align-items-center vh-10 bg-light">
+<div class="bg-dark text-light p-4 min-vh-100" data-bs-theme="dark">
+    
+    <div class="container-fluid d-flex rounded-3 justify-content-center align-items-center bg-body-tertiary border border-secondary py-3 mb-4 shadow">
+        <div class="text-center">
+            <h1 class="display-6 fw-bold text-info m-0">
+                Neurociencia SC <i class="bi bi-hub text-white"></i>
+            </h1>
+    
+        </div>
+    </div>
 
-	<div class="text-center">
+    <div class="container">
+        <div class="row g-4">
+            
+            <div class="col-12 col-md-5">
+                <div class="card bg-body-tertiary border-secondary shadow h-100">
+                    <div class="card-body p-4">
+                        <h3 class="h6 text-info mb-3"><i class="bi bi-terminal"></i> CONTROL DE SECUENCIA</h3>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small text-secondary">Introduce un Número:</label>
+                            <div class="input-group">
+                                <input type="number" min="0" step="1" class="form-control bg-dark text-white border-secondary" @bind="nuevoNumero" placeholder="0" />
+                                <button class="btn btn-info text-dark fw-bold" @onclick="AgregarNumero">
+                                    <i class="bi bi-plus-lg"></i> Añadir
+                                </button>
+                            </div>
+                        </div>
 
-		<h1 class="display-5 mt-1 fw-bold text-secondary mb-2">
-			Neuro Ciencia SC <i class="bi bi-person-arms-up"></i>
-		</h1>
+                        <div class="d-grid gap-2 pt-2">
+                            <button class="btn btn-outline-info fw-bold text-uppercase py-2" @onclick="ProcesarOrdenamiento" disabled="@(NeuroCiencia.secuencia.Count <= 1)">
+                                <i class="bi bi-cpu"></i> Calcular Orden Ascendente
+                            </button>
+                            <button class="btn btn-outline-danger fw-bold text-uppercase py-2" @onclick="LimpiarTodo">
+                                <i class="bi bi-trash3"></i> Limpiar Todo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-	</div>
+            <div class="col-12 col-md-7">
+                <div class="card bg-body-tertiary border-secondary shadow h-100">
+                    <div class="card-body p-4">
+                        <h3 class="h6 text-info mb-3"><i class="bi bi-sliders"></i> SECUENCIA INGRESADA</h3>
+                        
+                        @if (NeuroCiencia.secuencia.Count == 0)
+                        {
+                            <div class="alert alert-dark border-secondary text-secondary text-center my-3" role="alert">
+                                <i class="bi bi-inbox me-2"></i> La secuencia de nodos está vacía.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex flex-wrap gap-2 p-3 bg-dark rounded border border-secondary mb-3">
+                                @foreach (var numero in NeuroCiencia.secuencia)
+                                {
+                                    <span class="badge bg-secondary p-2 fs-6 border border-light-subtle">@numero</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
 
-</div>
+            <div class="col-12 mt-4">
+                <div class="card bg-body-tertiary border-secondary shadow">
+                    <div class="card-body p-4">
+                        <h3 class="h6 text-info mb-3"><i class="bi bi-activity"></i> LOG DE TRANSFORMACIÓN MÍNIMA</h3>
 
-<hr />
+                        @if (calculado && NeuroCiencia.secuenciaOrdenada.Count == 0)
+                        {
+                            <div class="alert alert-success border-success bg-success-subtle text-success text-center m-0" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i> La secuencia ya se encuentra optimizada y ordenada. Costo total: 0.
+                            </div>
+                        }
+                        else if (NeuroCiencia.secuenciaOrdenada.Count > 0)
+                        {
+                            <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-4 text-warning">
+                                <span><i class="bi bi-lightning-charge-fill"></i> <strong>Costo Total Acumulado:</strong></span>
+                                <span class="badge bg-warning text-dark fs-5 fw-bold px-3">@NeuroCiencia.SumarCostos()</span>
+                            </div>
 
-<h3>Control de Secuencia</h3>
-<label>Introduce un Número:</label>
-<input type="number" min="0" step="1" @bind="nuevoNumero" />
-<button @onclick="AgregarNumero">Añadir</button>
+                            <ul class="list-group list-group-flush border border-secondary rounded">
+                                @foreach (var i in Enumerable.Range(0, NeuroCiencia.secuenciaOrdenada.Count))
+                                {
+                                    var operacionPaso = NeuroCiencia.secuenciaOrdenada[i];
+                                    var costoPaso = NeuroCiencia.costos[i];
+                                    var lista = NeuroCiencia.secuencia[operacionPaso.indice];
 
-<button @onclick="ProcesarOrdenamiento" disabled="@(NeuroCiencia.secuencia.Count <= 1)">
-	Calcular Orden Ascendente
-</button>
-<button @onclick="LimpiarTodo">
-	Limpiar Todo
-</button>
+                                    <li class="list-group-item bg-dark border-bottom border-secondary d-flex justify-content-between align-items-center py-3">
+                                        <div>
+                                            <span class="text-secondary small me-2">Paso @(i+1):</span>
+                                            <span class="text-white">Nodo [@operacionPaso.indice]</span>
+                                            <i class="bi bi-arrow-right mx-2 text-info"></i>
+                                            <span class="badge bg-info text-dark fw-bold px-2 py-1">@operacionPaso.operacion</span>
+                                        </div>
+                                        <span class="text-secondary small">Costo: <strong class="text-white">@costoPaso</strong></span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-secondary small m-0 text-center py-2">
+                                <i class="bi bi-info-circle me-1"></i> Ingrese al menos 2 números en el panel de control y presione "Calcular".
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
 
-<hr />
-
-<h3>Secuencia Ingresada</h3>
-@if (NeuroCiencia.secuencia.Count == 0)
-{
-	<p>La lista está vacía.</p>
-}
-else
-{
-	<ul>
-		@foreach (var numero in NeuroCiencia.secuencia)
-		{
-			<li><strong>@numero</strong></li>
-		}
-	</ul>
-}
-
-<hr />
-
-<h3>Transformación Mínima</h3>
-
-@if (calculado && NeuroCiencia.secuenciaOrdenada.Count == 0)
-{
-	<p style="color: blue;">La secuencia ya se encuentra ordenada. Costo: 0.</p>
-}
-else if (NeuroCiencia.secuenciaOrdenada.Count > 0)
-{
-	<p style="color: green; font-weight: bold;">
-		Costo Total Acumulado: @NeuroCiencia.SumarCostos()
-	</p>
-
-	<ul>
-		@foreach (var i in Enumerable.Range(0, NeuroCiencia.secuenciaOrdenada.Count))
-		{
-			var operacionPaso = NeuroCiencia.secuenciaOrdenada[i];
-			var costoPaso = NeuroCiencia.costos[i];
-			var lista = NeuroCiencia.secuencia[operacionPaso.indice];
-
-			<li>
-				Original: @lista -> Modificar índice @operacionPaso.indice ->
-				<span>[@operacionPaso.operacion]</span>
-				(Costo: @costoPaso)
-			</li>
-		}
-	</ul>
-}
-else
-{
-	<p>Ingresa al menos 2 números y presiona "Calcular".</p>
-}
-
+        </div> </div> </div>
 <!-- Codigo de C# -->
 @code {
 	// Variables para el Control
