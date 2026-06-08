@@ -42,14 +42,14 @@ namespace NeuroCienciaSC.Services
             estadoMemoria.Clear();
             mejorCosto = int.MaxValue;
 
-            // Verificar que Secuencia no este Vacío o con un Solo Valor
+            // Verificar que Secuencia no este Vacio o con un Solo Valor
             if (secuencia == null || secuencia.Count <= 1) return;
 
             // Copia de la Secuencia Original
             List<int> secuenciaOriginal = new List<int>(secuencia);
 
             // Usar el Algortimo Recursivo
-            Memoria solucionOptima = ResolverMemorizacion(secuenciaOriginal, 0);
+            Memoria solucionOptima = await Task.Run(() => ResolverMemorizacion(secuenciaOriginal, 0));
 
             // Guardar la Solucion Optima
             if (solucionOptima != null)
@@ -63,7 +63,7 @@ namespace NeuroCienciaSC.Services
         private Memoria ResolverMemorizacion(List<int> secuenciaActual, int costoAcumulado)
         {
             // PODA del Costo para no Desbordar Memoria
-            if (costoAcumulado >= mejorCosto || costoAcumulado >= 15) return null;
+            if (costoAcumulado >= mejorCosto) return null;
 
             // Transformar a un String
             string estadoActual = string.Join(",", secuenciaActual);
@@ -92,28 +92,81 @@ namespace NeuroCienciaSC.Services
                 };
             }
 
+            // PODA de Profundidad
+            if (costoAcumulado > 14) return null;
+
             // Empezar la Recursion
             Memoria mejorMemoria = null;
             int menorCosto = int.MaxValue;
 
+            // Lista para Guardar Elemtos Desordenados
+            List<int> indiceOperar = new List<int>();
+
             // Recorrer la Secuencia para Operar
             for (int i = 0; i < secuenciaActual.Count; i++)
             {
-                // Valor Original
-                int valorOriginal = secuenciaActual[i];
 
-                // Operaciones que se Pueden Aplicar
-                List<string> operacionesDisponibles = new List<string> { "+1", "-1", "*2" };
-                if (valorOriginal % 2 == 0) operacionesDisponibles.Add("/2");
+                // Verificar si hay Elementos Desordenados
+                bool modificacion = false;
+
+                // Elementos Desordenados a la Izquierda
+                for (int j = 0; j < i; j++)
+                {
+                    if (secuenciaActual[j] > secuenciaActual[i])
+                    {
+                        modificacion = true;
+                        break;
+                    }
+                }
+
+                // Elementos Desordenados a la Derecha
+                if (!modificacion)
+                {
+                    for (int j = i + 1; j < secuenciaActual.Count; j++)
+                    {
+                        if (secuenciaActual[j] < secuenciaActual[i])
+                        {
+                            modificacion = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Agregar a la Lista
+                if (modificacion)
+                {
+                    indiceOperar.Add(i);
+                }
+
+            }
+
+            // Evitar la Lista Vacia
+            if (indiceOperar.Count == 0)
+            {
+                indiceOperar = Enumerable.Range(0, secuenciaActual.Count).ToList();
+            }
+
+            // Recorrer Solo los Indices para Operar
+            foreach (int ind in indiceOperar)
+            {
+                // Valor Original
+                int valorOriginal = secuenciaActual[ind];
+
+                // Operaciones a Aplicar
+                List<string> operacionesDisponibles = new List<string>();
+                if (valorOriginal % 2 == 0 && valorOriginal > 1) operacionesDisponibles.Add("/2");
+                if (valorOriginal > 1) operacionesDisponibles.Add("-1");
+                if (valorOriginal < 50) operacionesDisponibles.Add("+1");
+                if (valorOriginal > 1 && valorOriginal < 50) operacionesDisponibles.Add("*2");
 
                 // Aplicar Cada una de las Operaciones Disponibles
                 foreach (string op in operacionesDisponibles)
                 {
-                    // Aplicar cada Operacion
-                    if (op == "+1" && secuenciaActual[i] < 100) secuenciaActual[i] += 1;
-                    else if (op == "-1" && secuenciaActual[i] > 1) secuenciaActual[i] -= 1;
-                    else if (op == "*2" && secuenciaActual[i] > 0 && secuenciaActual[i] < 50) secuenciaActual[i] *= 2;
-                    else if (op == "/2") secuenciaActual[i] /= 2;
+                    // Aplicar Operacion
+                    if (op == "+1") secuenciaActual[ind] += 1;
+                    else if (op == "-1") secuenciaActual[ind] -= 1;
+                    else if (op == "*2") secuenciaActual[ind] *= 2;
+                    else if (op == "/2") secuenciaActual[ind] /= 2;
                     else continue;
 
                     // Almacenar el Costo de la Operacion
@@ -135,28 +188,28 @@ namespace NeuroCienciaSC.Services
 
                             // Construir la Solucion
                             mejorMemoria = new Memoria();
-                            mejorMemoria.Operaciones.Add((i, op));
+                            mejorMemoria.Operaciones.Add((ind, op));
                             mejorMemoria.Operaciones.AddRange(subMemoria.Operaciones);
                             mejorMemoria.Costos.Add(costoOperacion);
                             mejorMemoria.Costos.AddRange(subMemoria.Costos);
                             mejorMemoria.Secuencia = new List<int>(subMemoria.Secuencia);
 
                         }
+
                     }
 
                     // Devolver el Valor Original
-                    secuenciaActual[i] = valorOriginal;
+                    secuenciaActual[ind] = valorOriginal;
+
                 }
+
             }
 
-            // Guardar en Memoria antes de Terminar
-            if (mejorMemoria != null)
-            {
-                estadoMemoria[estadoActual] = mejorMemoria;
-            }
-
-            // Terminar la Recursion
-            return mejorMemoria;
+        // Guardar en Memoria antes de Terminar
+        estadoMemoria[estadoActual] = mejorMemoria;
+            
+        // Terminar la Recursion
+        return mejorMemoria;
 
         }
 
