@@ -20,7 +20,7 @@ namespace NeuroCienciaSC.Services
         };
 
         // Guardar Resultado en Tupla Indice - Operacion
-        public List<(int indice, string operacion)> secuenciaOrdenada { get; set; } = new List<(int, string)>();
+        public List<(int indice, string operacion, int valorAntes, int valorDespues)> secuenciaOrdenada { get; set; } = new List<(int, string, int, int)>();
 
         // Lista de Costos
         public List<int> costos { get; set; } = new List<int>();
@@ -28,9 +28,16 @@ namespace NeuroCienciaSC.Services
         // Metodo para Sumar Todos los Costos LINQ
         public int SumarCostos() => costos.Sum();
 
+        // Lista de la Secuencia Final
+        public List<int> secuenciaFinal { get; set; } = new List<int>();
+
         // Diccionario para Memoria
         public Dictionary<string, Memoria> estadoMemoria = new Dictionary<string, Memoria>();
 
+        // Almacenar Estados Fallidos para Evitar Desvordamiento de Memoria
+        private HashSet<string> estadosFallidos = new HashSet<string>();
+
+        // Mejor Costo Encontrado
         private int mejorCosto; 
 
         // Metodo para Ordenar de Forma Ascendente
@@ -40,7 +47,9 @@ namespace NeuroCienciaSC.Services
             secuenciaOrdenada.Clear();
             costos.Clear();
             estadoMemoria.Clear();
+            estadosFallidos.Clear();
             mejorCosto = int.MaxValue;
+            secuenciaFinal.Clear();
 
             // Verificar que Secuencia no este Vacio o con un Solo Valor
             if (secuencia == null || secuencia.Count <= 1) return;
@@ -56,6 +65,7 @@ namespace NeuroCienciaSC.Services
             {
                 secuenciaOrdenada = solucionOptima.Operaciones;
                 costos = solucionOptima.Costos;
+                secuenciaFinal = solucionOptima.Secuencia;
             }
         }
 
@@ -67,6 +77,9 @@ namespace NeuroCienciaSC.Services
 
             // Transformar a un String
             string estadoActual = string.Join(",", secuenciaActual);
+
+            // Verificar los Estados Fallidos
+            if (estadosFallidos.Contains(estadoActual)) return null;
 
             // Memorizacion Verificar si el Estado ya fue Calculado
             if (estadoMemoria.ContainsKey(estadoActual))
@@ -86,14 +99,18 @@ namespace NeuroCienciaSC.Services
                 // Devolver la Misma Secuencia
                 return new Memoria
                 {
-                    Operaciones = new List<(int, string)>(),
+                    Operaciones = new List<(int, string, int, int)>(),
                     Costos = new List<int>(),
                     Secuencia = new List<int>(secuenciaActual)
                 };
             }
 
             // PODA de Profundidad
-            if (costoAcumulado > 14) return null;
+            if (costoAcumulado > 30)
+            {
+                estadosFallidos.Add(estadoActual);
+                return null;
+            }
 
             // Empezar la Recursion
             Memoria mejorMemoria = null;
@@ -112,7 +129,7 @@ namespace NeuroCienciaSC.Services
                 // Elementos Desordenados a la Izquierda
                 for (int j = 0; j < i; j++)
                 {
-                    if (secuenciaActual[j] > secuenciaActual[i])
+                    if (secuenciaActual[j] >= secuenciaActual[i])
                     {
                         modificacion = true;
                         break;
@@ -124,7 +141,7 @@ namespace NeuroCienciaSC.Services
                 {
                     for (int j = i + 1; j < secuenciaActual.Count; j++)
                     {
-                        if (secuenciaActual[j] < secuenciaActual[i])
+                        if (secuenciaActual[j] <= secuenciaActual[i])
                         {
                             modificacion = true;
                             break;
@@ -188,7 +205,10 @@ namespace NeuroCienciaSC.Services
 
                             // Construir la Solucion
                             mejorMemoria = new Memoria();
-                            mejorMemoria.Operaciones.Add((ind, op));
+
+                            int valorDespues = secuenciaActual[ind];
+
+                            mejorMemoria.Operaciones.Add((ind, op, valorOriginal, valorDespues));
                             mejorMemoria.Operaciones.AddRange(subMemoria.Operaciones);
                             mejorMemoria.Costos.Add(costoOperacion);
                             mejorMemoria.Costos.AddRange(subMemoria.Costos);
@@ -205,11 +225,18 @@ namespace NeuroCienciaSC.Services
 
             }
 
-        // Guardar en Memoria antes de Terminar
-        estadoMemoria[estadoActual] = mejorMemoria;
-            
-        // Terminar la Recursion
-        return mejorMemoria;
+            // Guardar en Memoria antes de Terminar
+            if (mejorMemoria != null)
+            {
+                estadoMemoria[estadoActual] = mejorMemoria;
+            }
+            else
+            {
+                estadosFallidos.Add(estadoActual);
+            }
+
+            // Terminar la Recursion
+            return mejorMemoria;
 
         }
 
@@ -218,7 +245,7 @@ namespace NeuroCienciaSC.Services
         {
             for (int i = 0; i < lista.Count - 1; i++)
             {
-                if (lista[i] > lista[i + 1]) return false;
+                if (lista[i] >= lista[i + 1]) return false;
             }
             return true;
         }
@@ -228,7 +255,7 @@ namespace NeuroCienciaSC.Services
     // Clase para Guardar Memoria
     public class Memoria
     {
-        public List<(int indice, string operacion)> Operaciones { get; set; } = new List<(int, string)>();
+        public List<(int indice, string operacion, int valorAntes, int valorDespues)> Operaciones { get; set; } = new List<(int, string, int, int)>();
         public List<int> Costos { get; set; } = new List<int>();
         public List<int> Secuencia { get; set;  } = new List<int>();
     }
