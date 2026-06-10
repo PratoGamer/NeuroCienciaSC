@@ -39,8 +39,8 @@
 
                         <!-- Botones para Calcular -->
                         <div class="d-grid gap-2 pt-2">
-                            <button class="btn btn-outline-info fw-bold text-uppercase py-2" @onclick="ProcesarOrdenamiento" disabled="@(NeuroCiencia.secuencia.Count <= 1)">
-                                <i class="bi bi-cpu"></i> Calcular Orden Ascendente
+                            <button class="btn btn-outline-info fw-bold text-uppercase py-2" @onclick="ProcesarOrdenamiento" disabled="@(NeuroCiencia.secuencia.Count <= 1 || procesando)">
+                                <i class="bi bi-cpu"></i> Calcular Mejor Orden
                             </button>
                             <button class="btn btn-outline-danger fw-bold text-uppercase py-2" @onclick="LimpiarTodo">
                                 <i class="bi bi-trash3"></i> Limpiar Todo
@@ -77,72 +77,95 @@
             </div>
 
             <!-- Muestra de la Tranformacion -->
-            <div class="col-12 mt-4">
-                <div class="card bg-body-tertiary border-secondary shadow">
+            <div class="col-12 col-md-12">
+                <div class="card bg-body-tertiary border-secondary shadow h-100">
                     <div class="card-body p-4">
-                        <h3 class="h6 text-info mb-3"><i class="bi bi-activity"></i>TRANSFORMACIÓN MÍNIMA</h3>
+                        <h3 class="h6 text-info mb-3">RESULTADOS DE TRANSFORMACION COMPARATIVA</h3>
 
-                        @if (calculado && NeuroCiencia.secuenciaOrdenada.Count == 0)
+                        <!-- Resultado de la Prueba -->
+                        @if (calculado && !string.IsNullOrEmpty(NeuroCiencia.mejorOrden))
                         {
-                            <div class="alert alert-success border-success bg-success-subtle text-success text-center m-0" role="alert">
-                                <i class="bi bi-check-circle-fill me-2"></i> La secuencia ya se encuentra optimizada y ordenada. Costo total: 0.
-                            </div>
-                        }
-                        else if (NeuroCiencia.secuenciaOrdenada.Count > 0)
-                        {
-                            <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-4 text-warning">
-                                <span><i class="bi bi-lightning-charge-fill"></i> <strong>Costo Total Acumulado:</strong></span>
-                                <span class="badge bg-warning text-dark fs-5 fw-bold px-3">@NeuroCiencia.SumarCostos()</span>
+                            <div class="alert alert-info border-info bg-info-subtle text-light text-center mb-4 py-3 rounded shadow-sm">
+                                <h4 class="h5 fw-bold mb-1">RESULTADO DE LA PRUEBA</h4>
+                                La estrategia optima y mas economica para este conjunto de nodos es:
+                                <span class="badge bg-primary text-white fs-5 text-uppercase px-3 ms-2 border border-dark">
+                                    @NeuroCiencia.mejorOrden
+                                </span>
                             </div>
 
-                            <ul class="list-group list-group-flush border border-secondary rounded shadow-sm">
-                                @foreach (var i in Enumerable.Range(0, NeuroCiencia.secuenciaOrdenada.Count))
-                                {
-                                    var paso = NeuroCiencia.secuenciaOrdenada[i];
-                                    var costoPaso = NeuroCiencia.costos[i];
-
-                                    <li class="list-group-item bg-dark border-bottom border-secondary d-flex justify-content-between align-items-center py-3">
-                                        <div class="d-flex align-items-center flex-wrap gap-2">
-                                            <span class="badge bg-secondary text-light p-2 small">Paso @(i + 1)</span>
-
-                                            <span class="text-white-50 small">Índice <strong class="text-info">@paso.indice</strong>:</span>
-
-                                            <span class="badge bg-outline-light border border-secondary px-2 text-white-50">@paso.valorAntes</span>
-
-                                            <i class="bi bi-chevron-right text-info mx-1"></i>
-                                            <span class="badge bg-info text-dark fw-bold px-2 py-1">@paso.operacion</span>
-                                            <i class="bi bi-arrow-right text-success mx-1"></i>
-
-                                            <span class="badge bg-success text-white px-2">@paso.valorDespues</span>
+                            <!-- Ruta Ascendente -->
+                            <div class="row g-4">
+                                <div class="col-12 col-lg-6">
+                                    <div class="p-3 bg-dark bg-opacity-25 border border-secondary rounded h-100">
+                                        <h4 class="h6 text-info mb-3 fw-bold"> RUTA ASCENDENTE</h4>
+                                        <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-3 py-2 text-warning small">
+                                            <span>Costo Total Acumulado:</span>
+                                            <span class="badge bg-warning text-dark fw-bold fs-6">@NeuroCiencia.SumarCostosAscendente()</span>
                                         </div>
 
-                                        <span class="text-secondary small">
-                                            Costo: <strong class="text-info">+@costoPaso</strong>
-                                        </span>
-                                    </li>
-                                }
-                            </ul>
+                                        <ul class="list-group list-group-flush border border-secondary rounded mb-3" style="max-height: 350px; overflow-y: auto;">
+                                            @foreach (var i in Enumerable.Range(0, NeuroCiencia.secuenciaOrdenadaAscendente.Count))
+                                            {
+                                                var paso = NeuroCiencia.secuenciaOrdenadaAscendente[i];
+                                                <li class="list-group-item bg-dark border-bottom border-secondary d-flex justify-content-between align-items-center py-2 small text-light">
+                                                    <div>
+                                                        <span class="badge bg-secondary me-1">P@(i + 1)</span>
+                                                        Indice <strong class="text-info">@paso.indice</strong>: [@paso.valorAntes] -> <span class="badge bg-info text-dark">@paso.operacion</span> -> [@paso.valorDespues]
+                                                    </div>
+                                                    <span class="text-warning small fw-bold">+@NeuroCiencia.costosAscendente[i]</span>
+                                                </li>
+                                            }
+                                        </ul>
 
-                            <div class="mt-4 pt-2">
-                                <h4 class="h6 text-success mb-3">
-                                    <i class="bi bi-check-all text-success me-1"></i> SECUENCIA FINAL ORDENADA
-                                </h4>
+                                        <div class="p-3 bg-dark rounded border border-success">
+                                            <span class="text-success d-block small mb-2 fw-bold">Secuencia Final Ordenada:</span>
+                                            @foreach (var n in NeuroCiencia.secuenciaFinalAscendente)
+                                            {
+                                                <span class="badge bg-success me-1 p-2 fs-6 border border-light-subtle">@n</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
 
-                                <div class="d-flex flex-wrap gap-2 p-3 bg-dark rounded border border-success shadow-sm">
-                                    @foreach (var numero in NeuroCiencia.secuenciaFinal)
-                                    {
-                                        <span class="badge bg-success p-2 fs-6 border border-light-subtle animate__animated animate__fadeIn">
-                                            @numero
-                                        </span>
-                                    }
+                                <!-- Ruta Descendente -->
+                                <div class="col-12 col-lg-6">
+                                    <div class="p-3 bg-dark bg-opacity-25 border border-secondary rounded h-100">
+                                        <h4 class="h6 text-danger mb-3 fw-bold">RUTA DESCENDENTE</h4>
+                                        <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center mb-3 py-2 text-warning small">
+                                            <span>Costo Total Acumulado:</span>
+                                            <span class="badge bg-warning text-dark fw-bold fs-6">@NeuroCiencia.SumarCostosDescendente()</span>
+                                        </div>
+
+                                        <ul class="list-group list-group-flush border border-secondary rounded mb-3" style="max-height: 350px; overflow-y: auto;">
+                                            @foreach (var i in Enumerable.Range(0, NeuroCiencia.secuenciaOrdenadaDescendente.Count))
+                                            {
+                                                var paso = NeuroCiencia.secuenciaOrdenadaDescendente[i];
+                                                <li class="list-group-item bg-dark border-bottom border-secondary d-flex justify-content-between align-items-center py-2 small text-light">
+                                                    <div>
+                                                        <span class="badge bg-secondary me-1">P@(i + 1)</span>
+                                                        Indice <strong class="text-info">@paso.indice</strong>: [@paso.valorAntes] -> <span class="badge bg-info text-dark">@paso.operacion</span> -> [@paso.valorDespues]
+                                                    </div>
+                                                    <span class="text-warning small fw-bold">+@NeuroCiencia.costosDescendente[i]</span>
+                                                </li>
+                                            }
+                                        </ul>
+
+                                        <div class="p-3 bg-dark rounded border border-danger">
+                                            <span class="text-danger d-block small mb-2 fw-bold">Secuencia Final Ordenada:</span>
+                                            @foreach (var n in NeuroCiencia.secuenciaFinalDescendente)
+                                            {
+                                                <span class="badge bg-danger me-1 p-2 fs-6 border border-light-subtle">@n</span>
+                                            }
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-
                         }
+                        // No se han Ingresado Numeros
                         else
                         {
-                            <p class="text-secondary small m-0 text-center py-2">
-                                <i class="bi bi-info-circle me-1"></i> Ingrese al menos 2 números en el panel de control y presione "Calcular".
+                            <p class="text-secondary small m-0 text-center py-4">
+                                Ingrese al menos 2 numeros en el panel de control y presione "Calcular".
                             </p>
                         }
                     </div>
@@ -158,15 +181,16 @@
     // Variables para el Control
     private int nuevoNumero = 1;
     private bool calculado = false;
+    private bool procesando = false;
 
     // Funcion para Agregar un Numero a la Secuencia
     private void AgregarNumero()
     {
         // Verificar que sea Entero y Positivo
-        if (nuevoNumero >= 0)
+        if (nuevoNumero > 0)
         {
             NeuroCiencia.secuencia.Add(nuevoNumero);
-            calculado = false;
+            calculado = true;
         }
 
     }
@@ -174,10 +198,18 @@
     // Funcion para Procesar el Orden Ascendente
     private async Task ProcesarOrdenamiento()
     {
-        if (NeuroCiencia.secuencia.Count > 1)
+        if (NeuroCiencia.secuencia.Count > 1 && !procesando)
         {
-            await NeuroCiencia.OrdenarAscendenteMinimo();
-            calculado = true;
+            try
+            {
+                procesando = true;
+                await NeuroCiencia.CalcularOrdenMinimo();
+				calculado = true;
+            }
+            finally
+            {
+				procesando = false;
+            }
         }
 
     }
@@ -186,9 +218,13 @@
     private void LimpiarTodo()
     {
         NeuroCiencia.secuencia.Clear();
-        NeuroCiencia.secuenciaOrdenada.Clear();
-        NeuroCiencia.costos.Clear();
-		NeuroCiencia.secuenciaFinal.Clear();
+        NeuroCiencia.secuenciaOrdenadaAscendente.Clear();
+        NeuroCiencia.secuenciaOrdenadaDescendente.Clear();
+        NeuroCiencia.costosAscendente.Clear();
+        NeuroCiencia.costosDescendente.Clear();
+        NeuroCiencia.secuenciaFinalAscendente.Clear();
+        NeuroCiencia.secuenciaFinalDescendente.Clear();
+        NeuroCiencia.mejorOrden = string.Empty;
         nuevoNumero = 1;
         calculado = false;
     }
